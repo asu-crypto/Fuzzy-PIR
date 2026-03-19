@@ -64,8 +64,8 @@ set(HEADERS
   ${CMAKE_SOURCE_DIR}/pal_hss.hpp
   ${CMAKE_SOURCE_DIR}/hss_hd.hpp
   ${CMAKE_SOURCE_DIR}/pk_hd_fss.hpp
-  ${CMAKE_SOURCE_DIR}/ss_iblt.hpp
-  ${CMAKE_SOURCE_DIR}/pk_fpir.hpp
+  #${CMAKE_SOURCE_DIR}/ss_iblt.hpp
+  #${CMAKE_SOURCE_DIR}/pk_fpir.hpp
 )
 set(SOURCES
   ${CMAKE_SOURCE_DIR}/fss.cpp
@@ -76,8 +76,8 @@ set(SOURCES
   ${CMAKE_SOURCE_DIR}/pal_hss.cpp
   ${CMAKE_SOURCE_DIR}/hss_hd.cpp
   ${CMAKE_SOURCE_DIR}/pk_hd_fss.cpp
-  ${CMAKE_SOURCE_DIR}/ss_iblt.cpp
-  ${CMAKE_SOURCE_DIR}/pk_fpir.cpp
+  #${CMAKE_SOURCE_DIR}/ss_iblt.cpp
+  #${CMAKE_SOURCE_DIR}/pk_fpir.cpp
 )
 
 if( supported )
@@ -97,8 +97,8 @@ if(BUILD_TESTS)
         pal_hss_test
         hss_hd_test
         pk_hd_fss_test
-        iblt_test
-        pk_fpir_test
+        #iblt_test
+        #pk_fpir_test
     )
 
     set (TEST_SOURCE_PREFIX ${CMAKE_SOURCE_DIR}/tests)
@@ -112,8 +112,8 @@ if(BUILD_TESTS)
     add_executable(pal_hss_test ${TEST_SOURCE_PREFIX}/pal_hss.test.cpp ${SOURCES})
     add_executable(hss_hd_test ${TEST_SOURCE_PREFIX}/hss_hd.test.cpp ${SOURCES})
     add_executable(pk_hd_fss_test ${TEST_SOURCE_PREFIX}/pk_hd_fss.test.cpp ${SOURCES})
-    add_executable(iblt_test ${TEST_SOURCE_PREFIX}/iblt.test.cpp ${SOURCES})
-    add_executable(pk_fpir_test ${TEST_SOURCE_PREFIX}/pk_fpir.test.cpp ${SOURCES})
+    #add_executable(iblt_test ${TEST_SOURCE_PREFIX}/iblt.test.cpp ${SOURCES})
+    #add_executable(pk_fpir_test ${TEST_SOURCE_PREFIX}/pk_fpir.test.cpp ${SOURCES})
 
     foreach(target ${ALL_TESTS})
         set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
