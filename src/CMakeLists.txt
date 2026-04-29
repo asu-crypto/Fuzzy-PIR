@@ -65,7 +65,8 @@ set(HEADERS
   ${CMAKE_SOURCE_DIR}/hss_hd.hpp
   ${CMAKE_SOURCE_DIR}/pk_hd_fss.hpp
   #${CMAKE_SOURCE_DIR}/ss_iblt.hpp
-  #${CMAKE_SOURCE_DIR}/pk_fpir.hpp
+  ${CMAKE_SOURCE_DIR}/u64_ss_iblt.hpp
+  ${CMAKE_SOURCE_DIR}/pk_fpir.hpp
 )
 set(SOURCES
   ${CMAKE_SOURCE_DIR}/fss.cpp
@@ -77,7 +78,8 @@ set(SOURCES
   ${CMAKE_SOURCE_DIR}/hss_hd.cpp
   ${CMAKE_SOURCE_DIR}/pk_hd_fss.cpp
   #${CMAKE_SOURCE_DIR}/ss_iblt.cpp
-  #${CMAKE_SOURCE_DIR}/pk_fpir.cpp
+  ${CMAKE_SOURCE_DIR}/u64_ss_iblt.cpp
+  ${CMAKE_SOURCE_DIR}/pk_fpir.cpp
 )
 
 if( supported )
@@ -98,7 +100,7 @@ if(BUILD_TESTS)
         hss_hd_test
         pk_hd_fss_test
         #iblt_test
-        #pk_fpir_test
+        pk_fpir_test
     )
 
     set (TEST_SOURCE_PREFIX ${CMAKE_SOURCE_DIR}/tests)
@@ -113,7 +115,7 @@ if(BUILD_TESTS)
     add_executable(hss_hd_test ${TEST_SOURCE_PREFIX}/hss_hd.test.cpp ${SOURCES})
     add_executable(pk_hd_fss_test ${TEST_SOURCE_PREFIX}/pk_hd_fss.test.cpp ${SOURCES})
     #add_executable(iblt_test ${TEST_SOURCE_PREFIX}/iblt.test.cpp ${SOURCES})
-    #add_executable(pk_fpir_test ${TEST_SOURCE_PREFIX}/pk_fpir.test.cpp ${SOURCES})
+    add_executable(pk_fpir_test ${TEST_SOURCE_PREFIX}/pk_fpir.test.cpp ${SOURCES})
 
     foreach(target ${ALL_TESTS})
         set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
@@ -136,10 +138,12 @@ if(BUILD_BENCH)
         #bitvector_bench
         #multiaes_bench
         #preprocessing_bench
+        pk_fpir_bench
     )
 
     set (BENCH_SOURCE_PREFIX ${CMAKE_SOURCE_DIR}/benchmarks)
     
+    add_executable(pk_fpir_bench ${BENCH_SOURCE_PREFIX}/pk_fpir.bench.cpp ${SOURCES})
     #add_executable(psu_bench ${BENCH_SOURCE_PREFIX}/psu.bench.cpp ${SOURCES})
     #add_executable(ot_reduc ${BENCH_SOURCE_PREFIX}/ot_reduc.bench.cpp ${SOURCES})    
     #add_executable(simd_bench ${BENCH_SOURCE_PREFIX}/simd.bench.cpp ${SOURCES})
@@ -152,8 +156,9 @@ if(BUILD_BENCH)
         set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
         target_compile_features(${target} PUBLIC cxx_std_20)
         target_compile_options(${target} PRIVATE ${DEFAULT_COMPILER_OPTIONS_AND_WARNINGS})
-        target_link_libraries(${target} PRIVATE Catch2::Catch2WithMain visa::volePSI coproto::coproto xxhash unordered_dense::unordered_dense)
-        set_property(TARGET ${target} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        target_link_libraries(${target} PRIVATE Catch2::Catch2WithMain oc::cryptoTools ${GMP_LIBRARIES} ${GMPXX_LIBRARIES})
+        target_include_directories(${target} PRIVATE ${GMP_INCLUDE_DIR})
+        #target_compile_options(${target} PRIVATE ${GMP_CFLAGS_OTHER})
 
         add_test(NAME ${target} COMMAND ${target})
     endforeach()

@@ -75,7 +75,10 @@ void pal_hss::setup(const pal_hss::setup_opts& opts, PRNG& prg, pal_hss::pk& pk_
     sk_out.sk = psk;
     pk_out.value_base_bitlen = opts.value_base_bitlen;
 
+    assert(opts.blum_int_bitlen > opts.value_base_bitlen + opts.stat_sec_param + 1);
+
     size_t remaining_msg_bitlen = opts.blum_int_bitlen - (opts.value_base_bitlen + opts.stat_sec_param + 1);
+    
     size_t d_slice_bitlen = remaining_msg_bitlen;
     pk_out.d_slice_bitlen = d_slice_bitlen;
 

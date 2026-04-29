@@ -125,7 +125,7 @@ void hd_threshold_match(const BitVector& pub_bit_vector,
 
     acc_poly_eval_intss += (poly_coeffs[1] * carry_pow_mem_x_intss_mod_poly_prime.get_ui()) % poly_prime;
 
-    std::cout << "acc_poly_eval_intss = " << acc_poly_eval_intss << std::endl;
+    //std::cout << "acc_poly_eval_intss = " << acc_poly_eval_intss << std::endl;
 
     for (size_t i = 2; i < poly_coeffs.size(); i++) {
 
@@ -135,7 +135,7 @@ void hd_threshold_match(const BitVector& pub_bit_vector,
         acc_poly_eval_intss += poly_coeffs[i] * carry_pow_mem_x_intss_mod_poly_prime.get_ui();
         acc_poly_eval_intss %= poly_prime;
 
-        std::cout << "acc_poly_eval_intss = " << acc_poly_eval_intss << std::endl;
+        //std::cout << "acc_poly_eval_intss = " << acc_poly_eval_intss << std::endl;
 
     }
 

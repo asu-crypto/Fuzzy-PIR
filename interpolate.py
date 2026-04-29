@@ -42,15 +42,17 @@ def verify_interpolation(poly, points, prime):
         print(f"  f({x_val}) = {computed_y}, expected = {y_val}, match = {computed_y == y_val}")
 
 def main():
-    min_group_size = 256
-    bv_len = 10
-    hd_threshold = 4 # The threshold for Hamming distance, points with x <= threshold will have y=1, others y=0
+    prime = 251
+    bv_len = 128
+    hd_threshold = 7 # The threshold for Hamming distance, points with x <= threshold will have y=1, others y=0
 
-    prime = next_prime(max(min_group_size, bv_len) + 1) # Ensure prime is larger than both group size and bit vector length
+    assert is_prime(prime), f"{prime} is not prime"
+
+    #prime = next_prime(max(min_group_size, bv_len) + 1) # Ensure prime is larger than both group size and bit vector length
 
     assert hd_threshold <= bv_len, "Threshold must be less than or equal to bit vector length."
     
-    points = [(x,1 if x <= hd_threshold else 0) for x in range(0, bv_len)]
+    points = [(x,1 if x <= hd_threshold else 0) for x in range(0, bv_len+1)]
     
     print(f"Interpolating polynomial over GF({prime})")
     print(f"Points: {points}")
@@ -61,7 +63,11 @@ def main():
     print(f"\nPolynomial Coefficients: {poly.list()}")
     print(f"Polynomial: {poly}")
     # print(f"Degree: {poly.degree()}")
-    
+
+    print("{", end='')
+    print(','.join([str(coeff) for coeff in poly.list()]), end='')
+    print("}")
+
     # Verify the interpolation
     #verify_interpolation(poly, points, prime)
     
