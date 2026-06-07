@@ -373,14 +373,20 @@ void hw_fss_gen(PRNG& priv_dealer_prg, size_t n, const block& alpha, const block
     key_pair[0].n = n;
     key_pair[1].n = n;
 
+    key_pair[0].root_seed0 = priv_dealer_prg.get<block>();
+    key_pair[1].root_seed0 = priv_dealer_prg.get<block>();
     key_pair[0].root_seed1 = priv_dealer_prg.get<block>();
     key_pair[1].root_seed1 = priv_dealer_prg.get<block>();
     key_pair[0].root_seed2 = priv_dealer_prg.get<block>();
     key_pair[1].root_seed2 = priv_dealer_prg.get<block>();
 
-    dpf_cws* cws = new dpf_cws[tree_node_count];
+    dpf_cws* cws = new dpf_cws[tree_node_count+1]; // The extra one is for the DPF used for the where x = alpha.
     key_pair[0].cws = cws;
     key_pair[1].cws = cws;
+
+    block dummy_beta_share0, dummy_beta_share1;
+    bool dummy_ctrl_bit0, dummy_ctrl_bit1;
+    new_dpf_gen_cws(priv_dealer_prg, n, key_pair[0].root_seed0, 0, key_pair[1].root_seed0, 1, alpha, beta, cws[tree_node_count], dummy_beta_share0, dummy_ctrl_bit0, dummy_beta_share1, dummy_ctrl_bit1);
 
     vector<BitVector> alpha_slices_heap(tree_node_count); // POSSIBLE OPTIMIZATION POINT: Make sure this vector is optimally aligned.
     AlignedUnVector<block> r_heap(tree_node_count);
@@ -537,6 +543,8 @@ block hw_fss_eval(const ddf_key& key, block x) {
 
     }
 
-    return hd_eval;
+    pair<bool, osuCrypto::block> dpf_eval_res = new_dpf_eval(key.party_idx, key.n, key.root_seed0, key.party_idx, key.cws[tree_node_count], x);
+
+    return hd_eval ^ dpf_eval_res.second;
 
 }

@@ -52,7 +52,7 @@ TEST_CASE("HD FSS Small Full Domain Correctness (n=8)", "[correctness][poly_doma
 
         //std::cout << "x: " << x << " eval0: " << eval0 << " eval1: " << eval1 << " hd: " << block_hd(x, alpha, n) << std::endl;
 
-        if (block_hd(x, alpha, n) != 1) {
+        if (block_hd(x, alpha, n) > 1) {
             REQUIRE((eval0 ^ eval1) == block());
         } else {
             REQUIRE((eval0 ^ eval1) == beta);

@@ -36,6 +36,7 @@ struct ddf_key {
     size_t party_idx;
     size_t n;
 
+    osuCrypto::block root_seed0;
     osuCrypto::block root_seed1;
     osuCrypto::block root_seed2;
 
