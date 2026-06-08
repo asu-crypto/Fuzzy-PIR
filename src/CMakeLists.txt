@@ -139,11 +139,17 @@ if(BUILD_BENCH)
         #multiaes_bench
         #preprocessing_bench
         pk_fpir_bench
+        sk_hd_fss_bench
+        dpf_bench
+        pk_hd_fss_bench
     )
 
     set (BENCH_SOURCE_PREFIX ${CMAKE_SOURCE_DIR}/benchmarks)
     
     add_executable(pk_fpir_bench ${BENCH_SOURCE_PREFIX}/pk_fpir.bench.cpp ${SOURCES})
+    add_executable(sk_hd_fss_bench ${BENCH_SOURCE_PREFIX}/sk_hd_fss.bench.cpp ${SOURCES})
+    add_executable(dpf_bench ${BENCH_SOURCE_PREFIX}/dpf.bench.cpp ${SOURCES})
+    add_executable(pk_hd_fss_bench ${BENCH_SOURCE_PREFIX}/pk_hd_fss.bench.cpp ${SOURCES})
     #add_executable(psu_bench ${BENCH_SOURCE_PREFIX}/psu.bench.cpp ${SOURCES})
     #add_executable(ot_reduc ${BENCH_SOURCE_PREFIX}/ot_reduc.bench.cpp ${SOURCES})    
     #add_executable(simd_bench ${BENCH_SOURCE_PREFIX}/simd.bench.cpp ${SOURCES})
@@ -177,6 +183,9 @@ if(BUILD_PROFILING_EXECUTABLES)
       set_property(TARGET ${target} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
   endforeach()
 endif()
+
+add_executable(calc_fss_key_size ${CMAKE_SOURCE_DIR}/calc_fss_key_size.cpp ${SOURCES})
+target_link_libraries(calc_fss_key_size oc::cryptoTools ${GMP_LIBRARIES} ${GMPXX_LIBRARIES})
 
 #add_executable(psu_main ${CMAKE_SOURCE_DIR}/psu_main.cpp ${SOURCES})
 #target_link_libraries(psu_main visa::volePSI coproto::coproto xxhash unordered_dense::unordered_dense)
