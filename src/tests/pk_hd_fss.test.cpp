@@ -18,7 +18,7 @@ TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares 
      auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
 
     pk_hd_fss::one_time_setup_opts one_time_setup_opts;
-    one_time_setup_opts.blum_int_bitlen = 1024;
+    one_time_setup_opts.blum_int_bitlen = 2048;
     one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
     one_time_setup_opts.stat_sec_param = 40;
     one_time_setup_opts.eval_out_ss_prime_mod = 263;
@@ -53,7 +53,6 @@ TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares 
     REQUIRE(reconstructed_hd_threshold_match_adss == 1);
 
 }
-
 
 TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares indicating a match (HD=0) (n=10, hd_threshold=4)", "[pk_hd_fss]") {
 
@@ -137,7 +136,7 @@ TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares 
 
 }
 
-TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares indicating a non-match (HD=5) (n=10, hd_threshold=4)", "[pk_hd_fss]") {
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares indicating a non-match (HD=5) (n=10, hd_threshold=4)", "[pk_hd_fss][n=10][hd_threshold=4]") {
 
      auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
 
@@ -176,5 +175,853 @@ TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares 
     uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
 
     REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=16, hd_threshold=1)", "[pk_hd_fss][n=16][hd_threshold=1]") {
+
+    const size_t n = 16;
+    const size_t hd_threshold = 1;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=16, hd_threshold=2)", "[pk_hd_fss][n=16][hd_threshold=2]") {
+
+    const size_t n = 16;
+    const size_t hd_threshold = 2;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=16, hd_threshold=3)", "[pk_hd_fss][n=16][hd_threshold=3]") {
+
+    const size_t n = 16;
+    const size_t hd_threshold = 3;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=16, hd_threshold=4)", "[pk_hd_fss][n=16][hd_threshold=4]") {
+
+    const size_t n = 16;
+    const size_t hd_threshold = 4;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=32, hd_threshold=1)", "[pk_hd_fss][n=32][hd_threshold=1]") {
+
+    const size_t n = 32;
+    const size_t hd_threshold = 1;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=32, hd_threshold=2)", "[pk_hd_fss][n=32][hd_threshold=2]") {
+
+    const size_t n = 32;
+    const size_t hd_threshold = 2;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=32, hd_threshold=3)", "[pk_hd_fss][n=32][hd_threshold=3]") {
+
+    const size_t n = 32;
+    const size_t hd_threshold = 3;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=32, hd_threshold=4)", "[pk_hd_fss][n=32][hd_threshold=4]") {
+
+    const size_t n = 32;
+    const size_t hd_threshold = 4;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=64, hd_threshold=1)", "[pk_hd_fss][n=64][hd_threshold=1]") {
+
+    const size_t n = 64;
+    const size_t hd_threshold = 1;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=64, hd_threshold=2)", "[pk_hd_fss][n=64][hd_threshold=2]") {
+
+    const size_t n = 64;
+    const size_t hd_threshold = 2;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=64, hd_threshold=3)", "[pk_hd_fss][n=64][hd_threshold=3]") {
+
+    const size_t n = 64;
+    const size_t hd_threshold = 3;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=64, hd_threshold=4)", "[pk_hd_fss][n=64][hd_threshold=4]") {
+
+    const size_t n = 64;
+    const size_t hd_threshold = 4;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=128, hd_threshold=1)", "[pk_hd_fss][n=128][hd_threshold=1]") {
+
+    const size_t n = 128;
+    const size_t hd_threshold = 1;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=128, hd_threshold=2)", "[pk_hd_fss][n=128][hd_threshold=2]") {
+
+    const size_t n = 128;
+    const size_t hd_threshold = 2;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=128, hd_threshold=3)", "[pk_hd_fss][n=128][hd_threshold=3]") {
+
+    const size_t n = 128;
+    const size_t hd_threshold = 3;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
+
+}
+
+TEST_CASE("pk_hd_fss produces correct hamming distance matching additive shares (n=128, hd_threshold=4)", "[pk_hd_fss][n=128][hd_threshold=4]") {
+
+    const size_t n = 128;
+    const size_t hd_threshold = 4;
+    
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bit_vector(one_time_setup_opts.n);
+    secret_bit_vector[1] = true;
+    secret_bit_vector[3] = true;
+    secret_bit_vector[4] = true;
+    secret_bit_vector[7] = true;
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bit_vector, prg, k0, k1);
+
+    BitVector pub_bit_vector(one_time_setup_opts.n);
+    
+    for (size_t hd = 0; hd <= n; hd++) {
+        pub_bit_vector.assign(secret_bit_vector);
+        for (size_t i = 0; i < hd; i++) {
+            pub_bit_vector[i] = !pub_bit_vector[i];
+        }
+
+        uint32_t hd_threshold_match_adss0_out, hd_threshold_match_adss1_out;
+        pk_hd_fss::eval(k0, pub_bit_vector, hd_threshold_match_adss0_out);
+        pk_hd_fss::eval(k1, pub_bit_vector, hd_threshold_match_adss1_out);
+
+        uint32_t prime_mod = one_time_setup_opts.eval_out_ss_prime_mod;
+        uint32_t reconstructed_hd_threshold_match_adss = (hd_threshold_match_adss1_out + hd_threshold_match_adss0_out) % prime_mod;
+
+        if (hd <= hd_threshold) {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 1);
+        }
+        else {
+            REQUIRE(reconstructed_hd_threshold_match_adss == 0);
+        }
+
+    }
 
 }

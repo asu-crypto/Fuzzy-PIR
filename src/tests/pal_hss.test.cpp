@@ -79,6 +79,61 @@ TEST_CASE("pal_hss::setup generates consistent keys and ciphertexts", "[pal_hss]
 
 }
 
+TEST_CASE("pal_hss::setup generates consistent keys and ciphertexts", "[pal_hss][setup][blum_int_bitlen=2048]") {
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    pal_hss::setup_opts opts;
+    opts.blum_int_bitlen = 2048;
+    opts.miller_rabin_rounds_per_prime = 25;
+    opts.stat_sec_param = 40;
+    opts.value_base_bitlen = 7; // log2(128)
+
+    pal_hss::pk hss_pk;
+    std::array<pal_hss::ek, 2> hss_ek;
+    pal_hss::sk hss_sk;
+
+    pal_hss::setup(opts, prg, hss_pk, hss_ek, hss_sk);
+
+    REQUIRE(hss_pk.value_base_bitlen == opts.value_base_bitlen);
+
+    REQUIRE(hss_pk.d_slice_bitlen > 0);
+    REQUIRE(hss_pk.stat_sec_param == opts.stat_sec_param);
+    REQUIRE(hss_pk.value_base_bitlen == opts.value_base_bitlen);
+    REQUIRE(hss_pk.D_slice_cts.size() > 0);
+    REQUIRE(hss_pk.D_slice_cts.size() == hss_sk.d_slices.size());
+    REQUIRE(hss_pk.D_slice_cts.size() == hss_ek[0].d_slice_intss.size());
+    REQUIRE(hss_pk.D_slice_cts.size() == hss_ek[1].d_slice_intss.size());
+    REQUIRE(hss_ek[0].d_slice_intss.size() == hss_ek[1].d_slice_intss.size());
+    REQUIRE(hss_ek[0].d_slice_intss.size() > 0);
+    REQUIRE(hss_ek[0].pidx == 0);
+    REQUIRE(hss_ek[1].pidx == 1);
+
+    mpz_class int_ss_d_reconst;
+    intss_reconst(hss_ek[0].d_intss, hss_ek[1].d_intss, int_ss_d_reconst);
+    REQUIRE(int_ss_d_reconst == hss_sk.sk.d);
+
+    mpz_class sum_d_slices;
+    reconstuct_d_from_slices(hss_sk.d_slices, hss_pk.d_slice_bitlen, sum_d_slices);
+
+    REQUIRE(sum_d_slices == hss_sk.sk.d);
+
+    vector<mpz_class> reconstructed_d_slices_from_eks(hss_ek[0].d_slice_intss.size());
+    vector<mpz_class> reconstructed_d_slices_from_ek1(hss_ek[1].d_slice_intss.size());
+    batch_intss_reconst(hss_ek[0].d_slice_intss, hss_ek[1].d_slice_intss, reconstructed_d_slices_from_eks);
+
+    reconstuct_d_from_slices(hss_sk.d_slices, hss_pk.d_slice_bitlen, sum_d_slices);
+    REQUIRE(sum_d_slices == hss_sk.sk.d);
+
+    vector<mpz_class> decrypted_d_slices(hss_pk.D_slice_cts.size());
+    for (size_t i = 0; i < hss_pk.D_slice_cts.size(); i++) {
+        pal_decrypt(hss_pk.D_slice_cts[i], hss_sk.sk, hss_pk.pk, decrypted_d_slices[i]);
+    }
+
+    reconstuct_d_from_slices(decrypted_d_slices, hss_pk.d_slice_bitlen, sum_d_slices);
+    REQUIRE(sum_d_slices == hss_sk.sk.d);
+
+}
+
 TEST_CASE("pal_hss::setup with no evaluation key generation produces consistent keys and ciphertexts", "[pal_hss][setup_no_eks]") {
     auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
 

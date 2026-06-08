@@ -170,3 +170,17 @@ TEST_CASE("hom_ct_pt_mul correctly multiplies a ciphertext by a plaintext", "[pa
 
     REQUIRE(decrypted_product == (plaintext * multiplier) % pk.N); // Check that the decrypted product matches the expected result modulo N
 }
+
+TEST_CASE("pal_keygen outputs positive d compatible with floor/mod bit-slice reconstruction", "[paillier][keygen][blum_int_bitlen=2048]") {
+    auto prg = PRNG(osuCrypto::toBlock(123456789ULL,987654321ULL));
+
+    const size_t blum_int_bitlen = 2048;
+    const size_t miller_rabin_rounds_per_prime = 25;
+
+    pal_sk sk;
+    pal_pk pk;
+    pal_keygen(blum_int_bitlen, miller_rabin_rounds_per_prime, prg, sk, pk);
+
+    REQUIRE(sk.d > 0);
+    
+}
