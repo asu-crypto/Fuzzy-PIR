@@ -44,7 +44,6 @@ struct ddf_key {
 
 };
 
-void old_dpf_gen_cws(osuCrypto::PRNG& prg, size_t n, const osuCrypto::block& p0_root_seed, const osuCrypto::block& p1_root_seed, const osuCrypto::block& alpha, const osuCrypto::block& beta, dpf_cws& cws, osuCrypto::block& p0_beta_shares, osuCrypto::block& p1_beta_shares);
 void new_dpf_gen_cws(osuCrypto::PRNG& prg, 
                  size_t n, 
                  const osuCrypto::block& p0_root_seed,
@@ -63,6 +62,8 @@ void dpf_gen(osuCrypto::PRNG& prg, size_t n, const osuCrypto::block& alpha, cons
 osuCrypto::block dpf_eval(const dpf_key& key, osuCrypto::block x);
 osuCrypto::block dpf_eval(size_t party_idx, size_t n, const osuCrypto::block& root_seed, const dpf_cws& dpf_cws, const osuCrypto::block& x);
 std::pair<bool,osuCrypto::block> new_dpf_eval(size_t party_idx, size_t n, const osuCrypto::block& root_seed, bool root_ctrl_bit, const dpf_cws& dpf_cws, const osuCrypto::block& x);
+size_t dpf_key_size(const dpf_key& key);
 
 void hw_fss_gen(osuCrypto::PRNG& prg, size_t n, const osuCrypto::block& alpha, const osuCrypto::block& beta, std::array<ddf_key,2>& key_pair);
 osuCrypto::block hw_fss_eval(const ddf_key& key, osuCrypto::block x);
+size_t ddf_key_size(const ddf_key& key);

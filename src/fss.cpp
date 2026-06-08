@@ -227,6 +227,62 @@ void new_dpf_gen_cws(PRNG& prg, size_t n, const block& p0_root_seed, bool p0_roo
 
 }
 
+void new_dpf_gen_cws(PRNG& prg, size_t n, const block& p0_root_seed, bool p0_root_ctrl_bit, const block& p1_root_seed, bool p1_root_ctrl_bit, const block& alpha, const block& beta, dpf_cws& cws) {
+
+    assert(n > 0);
+    assert(n <= MAX_N); // We can only support up to 128 bits for now, since we use a block to represent the input space.
+    assert(block_in_domain(alpha, n) && "Alpha must be contained in the input space defined by n.");
+    assert(p0_root_ctrl_bit ^ p1_root_ctrl_bit && "The root control bits must be a binary secret share of 1.");
+
+    cws.cw_seed_vec.resize(n);
+
+    block p0_parent_seed = p0_root_seed;
+    block p1_parent_seed = p1_root_seed;
+    bool p0_parent_ctrl_bit = p0_root_ctrl_bit;
+    bool p1_parent_ctrl_bit = p1_root_ctrl_bit;
+
+    // OPTIMIZE: (1) We only need to convert the n first bits of alpha. (2) We may lazily convert the bits of alpha as we need them in the loop below, instead of converting them all at once here at the beginning.
+    array<bool,MAX_N> alpha_bits;
+    block_to_bool(alpha, alpha_bits);
+
+    for (size_t i = 0; i < n; i++) {
+        
+        bool alpha_i = alpha_bits[i];
+
+        PRNG p0_prg(p0_parent_seed);
+        PRNG p1_prg(p1_parent_seed);
+
+        const block p0_lvl_seeds[2] = {p0_prg.get<block>(), p0_prg.get<block>()};
+        const bool p0_lvl_ctrl_bits[2] = {p0_prg.get<bool>(), p0_prg.get<bool>()};
+        const block p1_lvl_seeds[2] = {p1_prg.get<block>(), p1_prg.get<block>()};
+        const bool p1_lvl_ctrl_bits[2] = {p1_prg.get<bool>(), p1_prg.get<bool>()};
+
+        const size_t keep = alpha_i;
+        const size_t lose = !alpha_i;
+
+        const block cw_seed = p0_lvl_seeds[lose] ^ p1_lvl_seeds[lose];
+        bool cw_ctrl_bits[2] = {0,0};
+
+        cw_ctrl_bits[left] = p0_lvl_ctrl_bits[left] ^ p1_lvl_ctrl_bits[left] ^ alpha_i ^ 1;
+        cw_ctrl_bits[right] = p0_lvl_ctrl_bits[right] ^ p1_lvl_ctrl_bits[right] ^ alpha_i;
+
+        cws.cw_seed_vec[i] = cw_seed;
+        
+        set_bit(cws.cw_left_ctrl_bit_vec, i, cw_ctrl_bits[left]);
+        set_bit(cws.cw_right_ctrl_bit_vec, i, cw_ctrl_bits[right]);
+
+        p0_parent_seed = p0_lvl_seeds[keep] ^ (p0_parent_ctrl_bit ? cw_seed : block());
+        p1_parent_seed = p1_lvl_seeds[keep] ^ (p1_parent_ctrl_bit ? cw_seed : block());
+        
+        p0_parent_ctrl_bit = p0_lvl_ctrl_bits[keep] ^ (p0_parent_ctrl_bit & cw_ctrl_bits[keep]);
+        p1_parent_ctrl_bit = p1_lvl_ctrl_bits[keep] ^ (p1_parent_ctrl_bit & cw_ctrl_bits[keep]);
+
+    }
+
+    cws.out_cw = p0_parent_seed ^ p1_parent_seed ^ beta;
+
+}
+
 void dpf_gen(PRNG& prg, size_t n, const block& alpha, const block& beta, std::array<dpf_key,2>& key_pair) {
     assert(n > 0);
     assert(n <= MAX_N); // We can only support up to 128 bits for now, since we use a block to represent the input space.
@@ -249,7 +305,7 @@ void dpf_gen(PRNG& prg, size_t n, const block& alpha, const block& beta, std::ar
     block p0_beta_share, p1_beta_share;
     bool p0_final_ctrl_bit, p1_final_ctrl_bit;
 
-    new_dpf_gen_cws(prg, n, key_pair[0].root_seed, key_pair[0].root_ctrl_bit, key_pair[1].root_seed, key_pair[1].root_ctrl_bit, alpha, beta, *cws, p0_beta_share, p0_final_ctrl_bit, p1_beta_share, p1_final_ctrl_bit);
+    new_dpf_gen_cws(prg, n, key_pair[0].root_seed, key_pair[0].root_ctrl_bit, key_pair[1].root_seed, key_pair[1].root_ctrl_bit, alpha, beta, *cws);
     
 }
 
@@ -468,6 +524,40 @@ void hw_fss_gen(PRNG& priv_dealer_prg, size_t n, const block& alpha, const block
         new_dpf_gen_cws(priv_dealer_prg, alpha_slices_heap[i].size(), p0_seed_heap[i], p0_ctrl_bit_heap[i], p1_seed_heap[i], p1_ctrl_bit_heap[i], alpha_slices_heap[i].blocks()[0], beta, cws[i], p0_beta_share, p0_beta_ctrl_bit, p1_beta_share, p1_beta_ctrl_bit);
     }
 
+}
+
+size_t dpf_key_size(const dpf_key& key) {
+    size_t size = 0;
+    
+    size += sizeof(key.root_seed);
+        
+    size += key.cws->cw_seed_vec.size() * sizeof(block);
+
+    size += sizeof(block); // For the out_cw
+
+    size += 2 * ((double) key.n / 8.0); // For the control bit correction, we can store them in a bit vector, so we only need n bits, which is n/8 bytes.
+    
+    return size;
+}
+
+size_t ddf_key_size(const ddf_key& key) {
+    size_t size = 0;
+    
+    size += 3 * sizeof(key.root_seed0); // For the three root seeds.
+        
+    const size_t num_dpfs = 2*key.n;
+
+    for (size_t i = 0; i < num_dpfs; i++) {
+        
+        const dpf_cws& cws = key.cws[i];
+
+        size += cws.cw_seed_vec.size() * sizeof(block); // For the cw seeds.
+        size += sizeof(block); // For the out_cw
+        size += 2 * ((double) cws.cw_seed_vec.size() / 8.0); // For the control bit correction, we can store them in a bit vector, so we only need n bits, which is n/8 bytes.
+
+    }
+
+    return size;
 }
 
 block hw_fss_eval(const ddf_key& key, block x) {
