@@ -17,11 +17,15 @@ void pal_keygen(size_t blum_int_bitlen,
     pk_out.N_squared = pk_out.N * pk_out.N;
     pk_out.N_plus_1 = pk_out.N + 1;
 
-    // The next lines computes the private exponent d such that d ≡ 0 (mod φ(N)) and d ≡ 1 (mod N)
+    // Compute a private exponent d such that d ≡ 0 (mod φ(N)) and d ≡ 1 (mod N).
+    // We then canonicalize d into [0, N*φ(N)) so it is always non-negative.
     mpz_class phi_N = (sk_out.p - 1) * (sk_out.q - 1);
     mpz_class g, s, t;
     mpz_gcdext(g.get_mpz_t(), s.get_mpz_t(), t.get_mpz_t(), pk_out.N.get_mpz_t(), phi_N.get_mpz_t());    
-    sk_out.d = phi_N*t;
+    sk_out.d = phi_N * t;
+
+    mpz_class N_times_phi_N = pk_out.N * phi_N;
+    mpz_mod(sk_out.d.get_mpz_t(), sk_out.d.get_mpz_t(), N_times_phi_N.get_mpz_t());
 
 }
 
