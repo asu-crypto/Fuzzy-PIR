@@ -638,3 +638,770 @@ block hw_fss_eval(const ddf_key& key, block x) {
     return hd_eval ^ dpf_eval_res.second;
 
 }
+
+
+
+vector<int64_t> get_block_to_coords(int64_t x, int u, int d) {
+    vector<int64_t> coords;
+    
+    int64_t mask((1ULL << u) - 1);        // gives me last u-bits of any block
+
+    // get d chunks of u-bits from x separated into coords
+    for(int i = 0; i < d; i++){
+        int64_t chunk = x & mask;
+        coords.push_back(chunk);
+        x = x >> u;
+    }
+
+    return coords;
+}
+
+int64_t coords_to_block(const vector<int64_t>& coords, int u, int d) {
+    int64_t point = 0;
+    assert(coords.size() == d);
+
+    for(int i = d-1; i >= 0; i--){
+        point = point << u;             // IMPORTANT: any chunk must have atmost u bits of information
+
+        int64_t chunk = coords[i];
+        point = point ^ chunk;
+    }
+
+    return point;
+}
+
+
+vector<int64_t> enumerate_ball(
+    vector<int64_t>& center,
+    int u, 
+    int d, 
+    int radius, 
+    int p
+){
+    vector<vector<int64_t>> bag;
+
+    bag.push_back(center);
+
+    int64_t R;
+    vector<vector<int64_t>>* curr_bag;
+
+    switch(p){
+        case 0: 
+
+            curr_bag = &bag;
+            
+            for(int dim = 0; dim < d; dim++){
+                vector<vector<int64_t>> next_bag;
+
+                for(vector<int64_t> p : *curr_bag){
+                    vector<int64_t> np = p;
+                    for(int delta = -radius; delta <= radius; delta++){
+                        np[dim] = np[dim] + delta;       // DOUBT : should it be + or ^ here?    // + should be arithmetic secret-sharing?
+                        next_bag.push_back(np);
+                    }
+                }
+
+                for(vector<int64_t> p : next_bag){
+                    bag.push_back(p);
+                }
+
+                curr_bag = &next_bag;
+            }
+            
+
+            break;
+
+        case 1:
+            
+            curr_bag = &bag;
+            
+            R = radius;
+            
+            for(int dim = 0; dim < d; dim++){
+                vector<vector<int64_t>> next_bag;
+
+                for(vector<int64_t> p : *curr_bag){
+                    vector<int64_t> np = p;
+                    for(int delta = -radius; delta <= radius; delta++){
+                        np[dim] = np[dim] + int64_t(delta);       // DOUBT : should it be + or ^ here?    // + should be arithmetic secret-sharing?
+
+                        next_bag.push_back(np);
+                    }
+                }
+
+                for(vector<int64_t> p : next_bag){
+
+                    int64_t dist(0);
+                    for(int i = 0; i < dim; i++){
+                        dist += ((p[i] > center[i]) ? (p[i] - center[i]) : (center[i] - p[i]));
+                    }   
+
+                    if (dist <= R){   
+                        bag.push_back(p);
+                    }
+                }
+
+                curr_bag = &next_bag;
+            }
+
+            break;
+
+        case 2:
+
+            curr_bag = &bag;
+            
+            R = radius*radius;
+            
+            for(int dim = 0; dim < d; dim++){
+                vector<vector<int64_t>> next_bag;
+
+                for(vector<int64_t> p : *curr_bag){
+                    vector<int64_t> np = p;
+                    for(int delta = -radius; delta <= radius; delta++){
+                        np[dim] = np[dim] + delta;       // DOUBT : should it be + or ^ here?    // + should be arithmetic secret-sharing?
+
+                        next_bag.push_back(np);
+                    }
+                }
+
+                for(vector<int64_t> p : next_bag){
+
+                    int64_t dist = 0;
+                    for(int i = 0; i < dim; i++){
+                        dist += (center[i] - p[i]) * (center[i] - p[i]);        // DOUBT: how to do squaring in block?
+                    }   
+
+                    if (dist <= R){   
+                        bag.push_back(p);
+                    }
+                }
+
+                curr_bag = &next_bag;
+            }
+
+            break;
+    }
+
+    vector<int64_t> points;
+    for(auto p : bag){
+        points.push_back(coords_to_block(p, u, d));
+    }
+
+    return points;
+}
+
+vector<int64_t> get_ball_around_point(int64_t x, int radius, int u, int d, int p = 0) {
+
+    vector<int64_t> center = get_block_to_coords(x, u, d);
+
+    vector<int64_t> points = enumerate_ball(center, u, d, radius, p);
+
+    return points;
+}
+
+void enum_based_lpfss_keygen(
+    osuCrypto::PRNG& prg, 
+    size_t u, 
+    size_t d, 
+    const osuCrypto::block& y, 
+    std::array<enum_based_lpfss_key, 2>& key_pair
+){
+    std::array<dpf_key, 2> dpf_key_pair;
+
+    size_t n = u * d;
+    block beta(1);          // output on matching must be 1
+
+    dpf_gen(prg, n, y, beta, dpf_key_pair);
+    
+    key_pair[0].key = dpf_key_pair[0];
+    key_pair[1].key = dpf_key_pair[1];
+}
+
+
+void generatePoints(
+    const std::vector<int64_t>& center, 
+    int delta, 
+    int dimension, 
+    std::vector<int64_t>& currentPoint, 
+    std::vector<std::vector<int64_t>>& allPoints
+) {
+    // Base case: If we've assigned a value to all dimensions, store the point
+    if (dimension == center.size()) {
+        allPoints.push_back(currentPoint);
+        return;
+    }
+
+    // Recursive step: Iterate through the range [center - delta, center + delta]
+    int64_t lower = center[dimension] - delta;
+    int64_t upper = center[dimension] + delta;
+
+    for (int64_t v = lower; v <= upper; ++v) {
+        currentPoint[dimension] = v;
+        generatePoints(center, delta, dimension + 1, currentPoint, allPoints);
+    }
+}
+
+std::vector<std::vector<int64_t>> enumerateLInfinityBox(const std::vector<int64_t>& center, int64_t delta) {
+    if (center.empty()) return {};
+
+    std::vector<std::vector<int64_t>> allPoints;
+    std::vector<int64_t> currentPoint(center.size());
+    
+    generatePoints(center, delta, 0, currentPoint, allPoints);
+    
+    return allPoints;
+}
+
+
+vector<block> test_with_points_around(block x, int delta, int u, int d, int p){
+    
+    vector<int64_t> coords = get_block_to_coords(_mm_cvtsi128_si64(x.mData), u, d);
+    vector<vector<int64_t>> l_infty_box = enumerateLInfinityBox(coords, delta);
+    // for(auto p : l_infty_box){
+    //     cout << "{";
+    //     for(int i = 0; i < d; i++){
+    //         cout << p[i] << ", ";
+    //     }
+    //     cout << "}\n";
+    // }
+    
+    vector<block> ball;
+
+    if(p == 0){
+        for(auto p : l_infty_box){
+            block test_point(coords_to_block(p, u, d));
+            ball.push_back(test_point);
+        }    
+    }
+
+    if(p == 1){
+        for(auto p : l_infty_box){
+            int64_t dist = 0;
+            for(int i = 0; i < d; i++){
+                dist += abs(p[i] - coords[i]);
+            }
+
+            if(dist <= delta){
+                block test_point(coords_to_block(p, u, d));
+                ball.push_back(test_point);
+            }
+        }
+    }
+
+    if(p == 2){
+        for(auto p : l_infty_box){
+            int64_t dist = 0;
+            for(int i = 0; i < d; i++){
+                dist += ((p[i] - coords[i]) * (p[i] - coords[i]));
+            }
+
+            if(dist <= delta*delta){
+                block test_point(coords_to_block(p, u, d));
+                ball.push_back(test_point);
+            }
+        }
+    }
+
+    return ball;
+}
+
+
+block enum_based_lpfss_eval(const enum_based_lpfss_key& key, block x, int delta, int u, int d, int p){
+    block acc(0);
+
+    vector<block> ball_x = test_with_points_around(x, delta, u, d, p);
+
+    // vector<int64_t> ball_x = get_ball_around_point(_mm_cvtsi128_si64(x.mData), delta, u, d, p);
+
+    for(block p : ball_x){
+        block match = dpf_eval(key.key, p);
+        acc = acc ^ match;                      // DOUBT: add or ^ ??   
+    }
+
+    return acc;
+}
+
+
+
+// int distance(vector<block> y, vector<block> x, int p){
+//     int d = y.size();
+//     assert(x.size() == d);
+
+//     block dist(0);
+//     switch(p){
+
+//         case 0:
+//             for(int i = 0; i < d; i++){
+//                 block local_dist = (y[i] > x[i] ? y[i] - x[i] : x[i] - y[i]);
+//                 dist = (dist > local_dist ? dist : local_dist);
+//             }
+//             break;
+
+//         case 1:
+//             for(int i = 0; i < d; i++){
+//                 dist += (y[i] > x[i] ? y[i] - x[i] : x[i] - y[i]);
+//             }
+//             break;
+
+//         case 2:
+//             for(int i = 0; i < d; i++){
+//                 dist += (y[i] - x[i]) * (y[i] - x[i]);
+//             }
+//             break;
+//     }
+
+//     int conv_dist = 0;
+//     if(p == 2){
+//         // how to convert to int??
+//     }
+
+//     return conv_dist;
+// }
+
+// vector<int> get_ball_truth_table(int radius, int u, int d, int p){
+//     // radius must be 2\delta
+    
+//     vector<int> table;
+
+//     vector<block> grid_center;
+//     for(int i = 0; i < d; i++){
+//         grid_center.push_back(block(radius));
+//     }
+
+//     vector<vector<block>> bag;
+//     bag.push_back(grid_center);
+
+//     vector<vector<block>>* curr_bag = &bag;
+        
+//     for(int dim = 0; dim < d; dim++){
+//         vector<vector<block>> next_bag;
+
+//         for(vector<block> p : *curr_bag){
+//             vector<block> np = p;
+//             for(int delta = -radius; delta <= radius; delta++){
+//                 np[dim] = np[dim] + block(delta);       // DOUBT : should it be + or ^ here?    // + should be arithmetic secret-sharing?
+//                 next_bag.push_back(np);
+//             }
+//         }
+
+//         for(auto point : next_bag){
+//             int dist = distance(point, grid_center, p);
+//             if(dist <= radius){
+//                 table.push_back(1);
+//             } else {
+//                 table.push_back(0);
+//             }
+//         }
+
+//         curr_bag = &next_bag;
+//     }
+
+//     return table;
+// }
+
+
+vector<int64_t> phi(vector<int64_t> x, vector<int64_t> c, int delta){
+    // c = [set of integer indexes, not coords]
+    // x = [set of coords]
+
+    vector<int64_t> res(x.size());
+    int d = x.size();
+
+    for(int i = 0; i < d; i++){
+        res[i] = x[i] - 2*delta*c[i] + delta;
+    }
+
+    return res;
+}
+
+
+
+void generateCubePoints(
+    int d, 
+    int limit, 
+    std::vector<int64_t>& currentPoint, 
+    std::vector<std::vector<int64_t>>& result
+) {
+    // Base Case: Point is complete
+    if (currentPoint.size() == d) {
+        result.push_back(currentPoint);
+        return;
+    }
+
+    // Iterate from 0 to 4*delta
+    for (int i = 0; i < limit; ++i) {
+        currentPoint.push_back(i);
+        generateCubePoints(d, limit, currentPoint, result);
+        currentPoint.pop_back(); // Backtrack
+    }
+}
+
+std::vector<std::vector<int64_t>> getAllPointsInCube(int d, int delta) {
+    if (d <= 0) return {};
+    
+    int limit = 4 * delta;
+    std::vector<std::vector<int64_t>> result;
+    std::vector<int64_t> currentPoint;
+    
+    generateCubePoints(d, limit, currentPoint, result);
+
+    return result;
+}
+
+
+int mapper_for_domred(vector<int64_t> coords, int scale){
+    // int res = 0;
+    // for(int i = 0; i < coords.size(); i++){
+    //     res += coords[i] * i;
+    // }
+    // return res;
+
+    int res = 0;
+    int multiplier = 1;
+    for(int i = 0; i < coords.size(); i++){
+        res += coords[i] * multiplier;
+        multiplier *= scale;
+    }
+    return res;
+}
+
+vector<int> ball(vector<int64_t> y, int delta, int u, int d, int p){
+
+    vector<int> tt(pow(4*delta, d));
+
+    vector<vector<int64_t>> delta4_cube = getAllPointsInCube(d, delta);
+
+    vector<int64_t> cell_y_ids(d);
+
+
+    for(int i = 0; i < d; i++){
+        cell_y_ids[i] = y[i]/(2*delta);
+    }
+
+    vector<int64_t> phi_y = phi(y, cell_y_ids, delta);
+
+    for(auto point : delta4_cube){
+        int dist = 0;
+        int64_t point_id = mapper_for_domred(point, 4*delta);
+
+
+        if (p == 0){
+            int flag = 0;
+            for(int i = 0; i < d; i++){
+                if((point[i] < phi_y[i] - 2*delta) || (point[i] > phi_y[i] + 2*delta)){
+                    flag = 1;
+                    break;
+                }
+            }
+
+            if(!flag){
+                tt[point_id] = 1;
+            } else {
+                tt[point_id] = 0;
+            }
+        }
+        
+        if(p == 1){
+            for(int i = 0; i < d; i++){
+                dist += abs(point[i] - phi_y[i]);
+            }
+
+            if(dist <= delta){
+                tt[point_id] = 1;
+            } else {
+                tt[point_id] = 0;
+            }
+        }
+
+        if(p == 2){
+            for(int i = 0; i < d; i++){
+                dist += (point[i] - phi_y[i]) * (point[i] - phi_y[i]);
+            }
+
+            if(dist <= delta*delta){
+                tt[point_id] = 1;
+            } else {
+                tt[point_id] = 0;
+            }
+        }
+
+    }
+
+
+    return tt;
+}
+
+
+
+vector<int> generate_ball_tt(vector<int64_t> y_trunc, int delta, int u, int d, int p){
+    vector<int> tt(pow(4*delta, d));
+    vector<vector<int64_t>> delta4_cube = getAllPointsInCube(d, delta);
+
+    for(auto point : delta4_cube){
+        int dist = 0;
+        int64_t point_id = coords_to_block(point, u, d);
+
+        if (p == 0){
+            int flag = 0;
+            for(int i = 0; i < d; i++){
+                if((point[i] < y_trunc[i] - 2*delta) || (point[i] > y_trunc[i] + 2*delta)){
+                    flag = 1;
+                    break;
+                }
+            }
+
+            if(!flag){
+                tt[point_id] = 1;
+            } else {
+                tt[point_id] = 0;
+            }
+        }
+        
+        if(p == 1){
+            for(int i = 0; i < d; i++){
+                dist += abs(point[i] - y_trunc[i]);
+            }
+
+            if(dist <= 2*delta){
+                tt[point_id] = 1;
+            } else {
+                tt[point_id] = 0;
+            }
+        }
+
+        if(p == 2){
+            for(int i = 0; i < d; i++){
+                dist += (point[i] - y_trunc[i]) * (point[i] - y_trunc[i]);
+            }
+
+            if(dist <= 4*delta*delta){
+                tt[point_id] = 1;
+            } else {
+                tt[point_id] = 0;
+            }
+        }
+    }
+
+    return tt;
+}
+
+
+std::pair<std::vector<block>, std::vector<block>>
+generate_tt_ss(osuCrypto::PRNG& prg, std::vector<int> tt) {
+
+    int n = tt.size();
+    int num_blocks = (n + 127) / 128;
+
+    std::vector<block> share0(num_blocks, block(0));
+    std::vector<block> share1(num_blocks, block(0));
+
+    int ctr = 0;
+
+    for (int b = 0; b < num_blocks; b++) {
+        block curr_block(0);
+
+        for (int j = 0; j < 128; j++) {
+            int idx = b * 128 + j;
+
+            if (idx >= n) break;
+
+            if (tt[idx]) {
+                // set bit j
+                uint64_t low = curr_block.get<uint64_t>()[0];
+                uint64_t high = curr_block.get<uint64_t>()[1];
+
+                if (j < 64)
+                    low |= (1ULL << j);
+                else
+                    high |= (1ULL << (j - 64));
+
+                curr_block.set<uint64_t>(0, low);
+                curr_block.set<uint64_t>(1, high);
+            }
+        }
+
+        block r = prg.get();
+        share0[ctr] = curr_block ^ r;
+        share1[ctr] = r;
+
+        ctr++;
+    }
+    return {share0, share1};
+}
+
+
+pair<vector<block>, vector<block>> get_ball_cws(osuCrypto::PRNG& prg, vector<int> tt, vector<block> betas0, vector<block> betas1){
+
+    std::pair<std::vector<block>, std::vector<block>> tt_shares = generate_tt_ss(prg, tt);
+
+    vector<block> T0 = tt_shares.first;
+    vector<block> T1 = tt_shares.second;
+
+    int num_blocks = betas0.size();
+    assert(num_blocks == 1);
+    assert(T0.size() == num_blocks);
+
+    vector<block> cw0(num_blocks), cw1(num_blocks);
+    for(int i = num_blocks-1; i >= 0; i--){
+        cw0[i] = T0[i] ^ betas0[i];
+        cw1[i] = T1[i] ^ betas1[i];
+    }
+
+    return {cw0, cw1};
+}
+
+
+vector<int64_t> get_cell_ids(vector<int64_t> y, int delta){
+    int d = y.size();
+
+    vector<int64_t> res(d);
+
+    for(int i = 0; i < d; i++){
+        res[i] = y[i] / (2*delta);
+    }
+
+    return res;
+}
+
+
+void domainred_keygen(osuCrypto::PRNG& prg, size_t u, size_t d, size_t p, size_t delta, const vector<int64_t> y, std::array<domainred_lpfss_key, 2>& key_pair){
+    vector<int> ball_phi_y = ball(y, delta, u, d, p);
+    // std::reverse(ball_phi_y.begin(), ball_phi_y.end());     // for block alignement 
+
+    
+    int n = ball_phi_y.size();
+    int num_blocks = num_blocks = (n + 127) / 128;
+    vector<block> betas0(num_blocks), betas1(num_blocks);
+    for(int i = num_blocks-1; i >= 0; i--){
+        betas0[i] = prg.get();
+        betas1[i] = prg.get();
+        
+        betas0[i] = (betas0[i] << 1);
+        betas1[i] = (betas1[i] << 1) ^ block(1);
+    }
+    pair<vector<block>, vector<block>> ball_cws = get_ball_cws(prg, ball_phi_y, betas0, betas1);
+
+    // DPF generation
+    std::array<dpf_key, 2> dpf_key_pair;
+    
+    block alpha = block(coords_to_block(get_cell_ids(y, delta), u, d));
+    block beta = betas0[0] ^ betas1[0];       // ON EXTENSION TO MULTI_BLOCK, THIS CHANGES TO LOOP
+    dpf_gen(prg, u*d, alpha, beta, dpf_key_pair);
+
+    key_pair[0].filter_key = dpf_key_pair[0];
+    key_pair[0].ball_cw0 = ball_cws.first;
+    key_pair[0].ball_cw1 = ball_cws.second;
+
+    key_pair[1].filter_key = dpf_key_pair[1];
+    key_pair[1].ball_cw0 = ball_cws.first;
+    key_pair[1].ball_cw1 = ball_cws.second;
+
+}
+
+
+
+
+void generateInteriorPoints(int d, std::vector<int>& current, std::vector<std::vector<int>>& result) {
+    // Base case: A point of dimension d has been fully constructed
+    if (current.size() == d) {
+        result.push_back(current);
+        return;
+    }
+
+    // Iterate through the three possible values for the current dimension
+    for (int value = -1; value <= 1; ++value) {
+        current.push_back(value);
+        generateInteriorPoints(d, current, result);
+        current.pop_back(); // Backtrack to try the next value
+    }
+}
+
+std::vector<std::vector<int>> getAllHypercubePoints(int d) {
+    if (d <= 0) return {};
+
+    std::vector<std::vector<int>> result;
+    std::vector<int> current;
+
+    generateInteriorPoints(d, current, result);
+    return result;
+}
+
+
+vector<vector<int64_t>> get_neigbouring_cells(const vector<int64_t> x, int delta){
+
+    int d = x.size();
+
+    vector<int64_t> cell_x(d);
+
+    // cout << "Center cell: ";
+    for(int i = 0; i < d; i++){
+        cell_x[i] = x[i] / (2*delta);
+        // cout << cell_x[i] << " ";
+    }
+
+    vector<vector<int64_t>> neighboring_cells;
+
+    vector<vector<int>> hypercubePoints = getAllHypercubePoints(d);
+    for(auto mask : hypercubePoints){
+        vector<int64_t> cell(d);
+
+        int flag = 0;
+        for(int i = 0; i < d; i++){
+            int64_t coord = cell_x[i] + mask[i];
+            if(coord < 0){
+                flag = 1;
+                break;
+            }
+
+            cell[i] = coord;
+        }
+
+        if(!flag){
+            neighboring_cells.push_back(cell);
+        }
+    }
+
+    return neighboring_cells;
+}
+
+
+osuCrypto::block domainred_eval(const domainred_lpfss_key& key, const vector<int64_t> x, int delta, int u, int d, int p){
+    
+    block z(0);
+
+    vector<int64_t> shift_x(x.size());
+    for(int i = 0; i < d; i++){
+        shift_x[i] = x[i] - delta;
+    }
+    vector<vector<int64_t>> neighboring_cells = get_neigbouring_cells(shift_x, delta);
+
+    for(auto c : neighboring_cells){
+        
+        vector<int64_t> phi_x_c = phi(x, c, delta);
+        int64_t phi_x_c_index = mapper_for_domred(phi_x_c, 4*delta);
+        // for(int i = 0; i < d; i++){
+        //     cout << phi_x_c[i] << " ";
+        // }
+        // cout << "\n";
+
+        block beta = dpf_eval(key.filter_key, block(coords_to_block(c, u, d)));
+        int t = _mm_cvtsi128_si64((beta & block(1)).mData);
+        
+        block cw;
+        if(t == 0){
+            cw = key.ball_cw0[0];
+        } else {
+            cw = key.ball_cw1[0];
+        }
+        block unwrapped = cw ^ beta;
+
+        block required_bit = (unwrapped >> phi_x_c_index) & block(1);
+
+        z = z ^ required_bit;
+    }
+
+    return z;
+}
+
+
+

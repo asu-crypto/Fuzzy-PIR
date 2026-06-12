@@ -195,6 +195,9 @@ target_link_libraries(calc_fss_key_size oc::cryptoTools ${GMP_LIBRARIES} ${GMPXX
 add_executable(calc_fpir_response_size ${CMAKE_SOURCE_DIR}/calc_fpir_response_size.cpp ${SOURCES})
 target_link_libraries(calc_fpir_response_size oc::cryptoTools ${GMP_LIBRARIES} ${GMPXX_LIBRARIES})
 
+add_executable(lpfss_benchmark_main ${CMAKE_SOURCE_DIR}/lpfss_benchmark_main.cpp ${SOURCES})
+target_link_libraries(lpfss_benchmark_main PRIVATE oc::cryptoTools ${GMP_LIBRARIES} ${GMPXX_LIBRARIES})
+
 #add_executable(psu_main ${CMAKE_SOURCE_DIR}/psu_main.cpp ${SOURCES})
 #target_link_libraries(psu_main visa::volePSI coproto::coproto xxhash unordered_dense::unordered_dense)
 

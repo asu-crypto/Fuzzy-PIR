@@ -67,3 +67,31 @@ size_t dpf_key_size(const dpf_key& key);
 void hw_fss_gen(osuCrypto::PRNG& prg, size_t n, const osuCrypto::block& alpha, const osuCrypto::block& beta, std::array<ddf_key,2>& key_pair);
 osuCrypto::block hw_fss_eval(const ddf_key& key, osuCrypto::block x);
 size_t ddf_key_size(const ddf_key& key);
+
+
+// Lp FSS
+
+
+typedef struct enum_based_lpfss_key {
+    dpf_key key;
+} enum_based_lpfss_key;
+
+
+typedef struct domainred_lpfss_key {
+    dpf_key filter_key;
+    std::vector<osuCrypto::block> ball_cw0;  // implemented as a truth table secret sharing
+    std::vector<osuCrypto::block> ball_cw1;  // implemented as a truth table secret sharing
+} domainred_lpfss_key;
+
+
+void enum_based_lpfss_keygen(osuCrypto::PRNG& prg, size_t u, size_t d, const osuCrypto::block& y, std::array<enum_based_lpfss_key, 2>& key_pair);
+osuCrypto::block enum_based_lpfss_eval(const enum_based_lpfss_key& key, osuCrypto::block x, int delta, int u, int d, int p);
+
+void domainred_keygen(osuCrypto::PRNG& prg, size_t u, size_t d, size_t p, size_t delta, std::vector<int64_t> y, std::array<domainred_lpfss_key, 2>& key_pair);
+osuCrypto::block domainred_eval(const domainred_lpfss_key& key, const std::vector<int64_t> x, int delta, int u, int d, int p);
+
+int64_t coords_to_block(const std::vector<int64_t>& coords, int u, int d);
+std::vector<std::vector<int>> getAllHypercubePoints(int d);
+std::vector<std::vector<int64_t>> get_neigbouring_cells(const std::vector<int64_t> x, int delta);
+
+std::pair<std::vector<osuCrypto::block>, std::vector<osuCrypto::block>> generate_tt_ss(osuCrypto::PRNG& prg, std::vector<int> tt);
