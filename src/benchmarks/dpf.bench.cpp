@@ -34,7 +34,7 @@ static size_t block_hd(const block& a, const block& b, size_t n) {
     return (a_bv ^ b_bv).hammingWeight();
 }
 
-TEST_CASE("SK DPF key pairs generated with n=128", "[sk_dpf][n=128]") {
+TEST_CASE("SK DPF key pairs generated with n=128", "[sk_dpf][gen][n=128]") {
     
     constexpr size_t n = 128; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -87,7 +87,7 @@ TEST_CASE("SK DPF key pairs generated with n=128", "[sk_dpf][n=128]") {
     };
 }
 
-TEST_CASE("SK DPF Eval with n=128", "[sk_dpf][n=128]") {
+TEST_CASE("SK DPF Eval with n=128", "[sk_dpf][eval][n=128]") {
     
     constexpr size_t n = 128; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -148,7 +148,7 @@ TEST_CASE("SK DPF Eval with n=128", "[sk_dpf][n=128]") {
     };
 }
 
-TEST_CASE("SK DPF Eval with n=8", "[sk_dpf][n=8]") {
+TEST_CASE("SK DPF Eval with n=8", "[sk_dpf][eval][n=8]") {
     
     constexpr size_t n = 8; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -209,7 +209,7 @@ TEST_CASE("SK DPF Eval with n=8", "[sk_dpf][n=8]") {
     };
 }
 
-TEST_CASE("SK DPF Eval with n=16", "[sk_dpf][n=16]") {
+TEST_CASE("SK DPF Eval with n=16", "[sk_dpf][eval][n=16]") {
     
     constexpr size_t n = 16; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -270,7 +270,7 @@ TEST_CASE("SK DPF Eval with n=16", "[sk_dpf][n=16]") {
     };
 }
 
-TEST_CASE("SK DPF Eval with n=32", "[sk_dpf][n=32]") {
+TEST_CASE("SK DPF Eval with n=32", "[sk_dpf][eval][n=32]") {
     
     constexpr size_t n = 32; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -331,7 +331,7 @@ TEST_CASE("SK DPF Eval with n=32", "[sk_dpf][n=32]") {
     };
 }
 
-TEST_CASE("SK DPF Eval with n=64", "[sk_dpf][n=64]") {
+TEST_CASE("SK DPF Eval with n=64", "[sk_dpf][eval][n=64]") {
     
     constexpr size_t n = 64; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -392,7 +392,7 @@ TEST_CASE("SK DPF Eval with n=64", "[sk_dpf][n=64]") {
     };
 }
 
-TEST_CASE("SK DPF key pairs generated with n=8", "[sk_dpf][n=8]") {
+TEST_CASE("SK DPF key pairs generated with n=8", "[sk_dpf][gen][n=8]") {
     
     constexpr size_t n = 8; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -445,7 +445,7 @@ TEST_CASE("SK DPF key pairs generated with n=8", "[sk_dpf][n=8]") {
     };
 }
 
-TEST_CASE("SK DPF key pairs generated with n=16", "[sk_dpf][n=16]") {
+TEST_CASE("SK DPF key pairs generated with n=16", "[sk_dpf][gen][n=16]") {
     
     constexpr size_t n = 16; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -498,7 +498,7 @@ TEST_CASE("SK DPF key pairs generated with n=16", "[sk_dpf][n=16]") {
     };
 }
 
-TEST_CASE("SK DPF key pairs generated with n=32", "[sk_dpf][n=32]") {
+TEST_CASE("SK DPF key pairs generated with n=32", "[sk_dpf][gen][n=32]") {
     
     constexpr size_t n = 32; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -551,7 +551,7 @@ TEST_CASE("SK DPF key pairs generated with n=32", "[sk_dpf][n=32]") {
     };
 }
 
-TEST_CASE("SK DPF key pairs generated with n=64", "[sk_dpf][n=64]") {
+TEST_CASE("SK DPF key pairs generated with n=64", "[sk_dpf][gen][n=64]") {
     
     constexpr size_t n = 64; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.

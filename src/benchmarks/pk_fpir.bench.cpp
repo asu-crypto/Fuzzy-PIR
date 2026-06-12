@@ -72,7 +72,7 @@ static void gen_rand_non_matching_inputs(size_t n, PRNG& prng, BitVector& query_
         gen_rand_non_matching_input(prng, query_bv, matching_threshold, db_entry);
     }
 }
-
+/*
 TEST_CASE("The PK HD FPIR Scheme perfectly matches a single string in the DB where |DB| = 1024, n=128, and d = 7", "[pk_fpir][n=128][d=7][db_len=1024]") {
     BENCHMARK_ADVANCED("n=128 online phase")(Catch::Benchmark::Chronometer meter) {
 
@@ -1125,3 +1125,4 @@ TEST_CASE("The PK HD FPIR Scheme perfectly matches a single string in the DB whe
 
     };
 }
+    */

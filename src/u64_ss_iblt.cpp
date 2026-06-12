@@ -40,7 +40,6 @@ static size_t calc_tab_len(size_t threshold, size_t num_hash_funcs) {
     assert(threshold > 0);
 
     return num_hash_funcs * calc_subtab_len(threshold, num_hash_funcs);
-
 }
 
 static bool iblt_initiated(const u64_ss_iblt::table& t) {

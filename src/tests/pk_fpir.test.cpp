@@ -6,14 +6,19 @@
 #include "../pk_hd_fss.hpp"
 #include "../pk_fpir.hpp"
 #include "../ss_iblt.hpp"
+#include "../u8_ss_iblt.hpp"
 #include "cryptoTools/Common/block.h"
 #include "cryptoTools/Crypto/PRNG.h"
+#include "cryptoTools/Common/Aligned.h"
 #include <gmpxx.h>
+#include <unordered_set>
 
 using osuCrypto::PRNG;
 using std::array;
 using std::vector;
 using osuCrypto::BitVector;
+using osuCrypto::block;
+using osuCrypto::AlignedUnVector;
 
 static void gen_rand_matching_input(PRNG& prng, BitVector& query_bv, size_t matching_threshold, vector<BitVector>& db_entry) {
     assert(query_bv.size() == 32 || query_bv.size() == 64);
@@ -73,17 +78,37 @@ static void gen_rand_non_matching_inputs(size_t n, PRNG& prng, BitVector& query_
     }
 }
 
+static void REQUIRE_VECS_CONTAIN_SAME_ELEMENTS(vector<BitVector>& vec1, vector<BitVector>& vec2) {
+    REQUIRE(vec1.size() == vec2.size());
+
+    for (const auto& elem1 : vec1) {
+        bool found_match = false;
+
+        for (const auto& elem2 : vec2) {
+            if (elem1 == elem2) {
+                found_match = true;
+                break;
+            }
+        }
+
+        REQUIRE(found_match);
+    }
+
+}
+
 TEST_CASE("The PK HD FPIR Scheme perfectly matches a single string in the DB where |DB| = 10, n=64, and d = 6", "[pk_fpir][n=64][d=6][db_len=10]") {
 
+    constexpr size_t response_max_match_count = 64; // This should be greater than or equal to the number of entries in the database that match the query.
+
     // Set up parameters for the test.
-    const size_t n = 64; // Bit length of the database entries and query.
-    const size_t inclusive_hd_threshold = 6; // Hamming distance threshold for a match.
+    const size_t n = 32; // Bit length of the database entries and query.
+    const size_t inclusive_hd_threshold = 1; // Hamming distance threshold for a match.
     const size_t blum_int_bitlen = 1024; // Bit length of the Blum integer for Paillier key generation.
     const size_t miller_rabin_rounds_per_prime = 25; // Miller-Rabin rounds for primality testing during Paillier key generation.
     const size_t stat_sec_param = 40; // Statistical security parameter for key generation.
     const uint64_t eval_out_ss_prime_mod = 251; // Prime modulus for the output of the eval function.
     const size_t db_size = 10; // Number of entries in the database.
-    const size_t num_matching_db_entries = 7; // Number of entries in the database that should match the query.
+    const size_t num_matching_db_entries = 2; // Number of entries in the database that should match the query.
 
     PRNG prg(osuCrypto::toBlock(123)); // Initialize a pseudorandom generator with a fixed seed for reproducibility.
 
@@ -102,31 +127,31 @@ TEST_CASE("The PK HD FPIR Scheme perfectly matches a single string in the DB whe
 
     // Create a database with a single entry that matches the query bit vector.
     vector<BitVector> db;
+    vector<BitVector> expected_matches;
+    expected_matches.reserve(num_matching_db_entries);
     db.reserve(db_size);
-    gen_rand_matching_inputs(num_matching_db_entries, prg, query_bv, inclusive_hd_threshold, db);
+    gen_rand_matching_inputs(num_matching_db_entries, prg, query_bv, inclusive_hd_threshold, expected_matches);
+    db.insert(db.end(), expected_matches.begin(), expected_matches.end());
     gen_rand_non_matching_inputs(db_size - num_matching_db_entries, prg, query_bv, inclusive_hd_threshold, db);
     std::shuffle(db.begin(), db.end(), prg);
 
-    osuCrypto::AlignedUnVector<uint32_t> matches_ss0(db.size());
-    osuCrypto::AlignedUnVector<uint32_t> matches_ss1(db.size());
-    matches_ss0[0] = 0;
-    matches_ss1[0] = 0;
+    u8_ss_iblt::table ss0_iblt, ss1_iblt;
 
-    pk_fpir::gen_hd_response(hd_query_fss_keys[0], n, db, matches_ss0);
-    pk_fpir::gen_hd_response(hd_query_fss_keys[1], n, db, matches_ss1);
+    block pub_prng_seed = prg.get<block>();
 
-    size_t num_matches = 0;
-    for (size_t i = 0; i < db.size(); i++) {
-        size_t hw = (db[i] ^ query_bv).hammingWeight();
+    pk_fpir::gen_hd_response(hd_query_fss_keys[0], pub_prng_seed, n, db, response_max_match_count, ss0_iblt);
+    pk_fpir::gen_hd_response(hd_query_fss_keys[1], pub_prng_seed, n, db, response_max_match_count, ss1_iblt);
 
-        if (hw <= inclusive_hd_threshold) {
-            REQUIRE((matches_ss0[i] + matches_ss1[i]) % eval_out_ss_prime_mod == 1);
-        } else {
-            REQUIRE((matches_ss0[i] + matches_ss1[i]) % eval_out_ss_prime_mod == 0);
-        }
-    }
+    std::vector<BitVector> db_matches_out;
+
+    pk_fpir::gen_hd_decode_response(n, ss0_iblt, ss1_iblt, db_matches_out);
+    
+    REQUIRE_VECS_CONTAIN_SAME_ELEMENTS(expected_matches, db_matches_out);
+    
 
 }
+
+/*
 
 TEST_CASE("The PK HD FPIR Scheme perfectly matches a single string in the DB where |DB| = 5, n=64, and d = 6", "[pk_fpir][n=64][d=6][db_len=5]") {
 

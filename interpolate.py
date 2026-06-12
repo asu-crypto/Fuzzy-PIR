@@ -44,7 +44,7 @@ def verify_interpolation(poly, points, prime):
 def main():
     prime = 251
     bv_len = 128
-    hd_threshold = 7 # The threshold for Hamming distance, points with x <= threshold will have y=1, others y=0
+    hd_threshold = 4 # The threshold for Hamming distance, points with x <= threshold will have y=1, others y=0
 
     assert is_prime(prime), f"{prime} is not prime"
 

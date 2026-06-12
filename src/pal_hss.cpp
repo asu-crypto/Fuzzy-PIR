@@ -35,6 +35,8 @@ void pal_hss::setup(const pal_hss::setup_opts& opts, PRNG& prg, pal_hss::pk& pk_
     pk_out.value_base_bitlen = opts.value_base_bitlen;
 
     size_t remaining_msg_bitlen = opts.blum_int_bitlen - (opts.value_base_bitlen + opts.stat_sec_param + 1);
+    assert(remaining_msg_bitlen > 0);
+
     size_t d_slice_bitlen = remaining_msg_bitlen;
     pk_out.d_slice_bitlen = d_slice_bitlen;
 
@@ -204,6 +206,21 @@ void pal_hss::hom_add_inputs(pal_hss::input& in0_and_out, const pal_hss::input& 
     
 }
 
+void pal_hss::hom_add_mem(const pal_hss::mem& mem0, const pal_hss::mem& mem1, const pal_hss::pk& pk, pal_hss::mem& sum_mem_out) {
+    assert(mem0.sliced_xd_intss.size() == mem1.sliced_xd_intss.size());
+
+    size_t num_slices = mem0.sliced_xd_intss.size();
+    sum_mem_out.sliced_xd_intss.resize(num_slices);
+
+    mpz_add(sum_mem_out.x_intss.get_mpz_t(), mem0.x_intss.get_mpz_t(), mem1.x_intss.get_mpz_t());
+    mpz_add(sum_mem_out.xd_intss.get_mpz_t(), mem0.xd_intss.get_mpz_t(), mem1.xd_intss.get_mpz_t());
+
+    for (size_t i = 0; i < num_slices; i++) {
+        mpz_add(sum_mem_out.sliced_xd_intss[i].get_mpz_t(), mem0.sliced_xd_intss[i].get_mpz_t(), mem1.sliced_xd_intss[i].get_mpz_t());
+    }
+    
+}
+
 // THIS IS WHERE I STOPPED.
 // I MAY NOT NEED SHARES OF THE SLICES.
 
@@ -232,6 +249,22 @@ void pal_hss::input_to_mem(const pal_hss::input& input, const pal_hss::pk& pk, c
 
 }
 
+void pal_hss::pubconst_to_mem(const mpz_class& pubconst, const pal_hss::pk& pk, const pal_hss::ek& ek, size_t party_idx, pal_hss::mem& mem_out) {
+    assert(party_idx == 0 || party_idx == 1);
+
+    const size_t num_d_slices = ek.d_slice_intss.size();
+    mem_out.sliced_xd_intss.resize(num_d_slices);
+
+    mem_out.x_intss = (party_idx == 0) ? 0 : pubconst;
+
+    mpz_mul(mem_out.xd_intss.get_mpz_t(), ek.d_intss.get_mpz_t(), pubconst.get_mpz_t());
+    
+    for (size_t i = 0; i < num_d_slices; i++) {
+        mpz_mul(mem_out.sliced_xd_intss[i].get_mpz_t(), ek.d_slice_intss[i].get_mpz_t(), pubconst.get_mpz_t());
+    }
+
+}
+
 void pal_hss::hom_mult_mem_input(const pal_hss::mem& mem_in, const pal_hss::input& input, const pal_hss::pk& pk, const pal_hss::ek& ek, pal_hss::mem& mem_out) {
     assert(input.xd_slices_cts.size() == pk.D_slice_cts.size());
     assert(mem_in.sliced_xd_intss.size() == pk.D_slice_cts.size());
@@ -253,6 +286,26 @@ void pal_hss::hom_mult_mem_input(const pal_hss::mem& mem_in, const pal_hss::inpu
 
     mpz_powm(mem_out.x_intss.get_mpz_t(), input.x_ct.get_mpz_t(), mem_in.xd_intss.get_mpz_t(), pk.pk.N_squared.get_mpz_t());
     ddlog(pk.pk.N, mem_out.x_intss, mem_out.x_intss);
+
+}
+
+void pal_hss::hom_mult_mem_palct(const pal_hss::mem& mem_in, const mpz_class& pal_ct, const pal_hss::pk& pk, const pal_hss::ek& ek, mpz_class& ss_out) {
+    mpz_powm(ss_out.get_mpz_t(), pal_ct.get_mpz_t(), mem_in.xd_intss.get_mpz_t(), pk.pk.N_squared.get_mpz_t());
+    ddlog(pk.pk.N, ss_out, ss_out);
+}
+
+void pal_hss::hom_mult_mem_pubconst(const pal_hss::mem& mem_in, const mpz_class& pubconst, const pal_hss::pk& pk, const pal_hss::ek& ek, pal_hss::mem& mem_out) {
+    
+    const size_t num_d_slices = mem_in.sliced_xd_intss.size();
+    mem_out.sliced_xd_intss.resize(num_d_slices);
+
+    mpz_mul(mem_out.x_intss.get_mpz_t(), mem_in.x_intss.get_mpz_t(), pubconst.get_mpz_t());
+    
+    mpz_mul(mem_out.xd_intss.get_mpz_t(), mem_in.xd_intss.get_mpz_t(), pubconst.get_mpz_t());
+    
+    for (size_t i = 0; i < num_d_slices; i++) {
+        mpz_mul(mem_out.sliced_xd_intss[i].get_mpz_t(), mem_in.sliced_xd_intss[i].get_mpz_t(), pubconst.get_mpz_t());
+    }
 
 }
 

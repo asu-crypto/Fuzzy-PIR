@@ -65,6 +65,7 @@ set(HEADERS
   ${CMAKE_SOURCE_DIR}/hss_hd.hpp
   ${CMAKE_SOURCE_DIR}/pk_hd_fss.hpp
   #${CMAKE_SOURCE_DIR}/ss_iblt.hpp
+  ${CMAKE_SOURCE_DIR}/u8_ss_iblt.hpp
   ${CMAKE_SOURCE_DIR}/u64_ss_iblt.hpp
   ${CMAKE_SOURCE_DIR}/pk_fpir.hpp
 )
@@ -77,8 +78,10 @@ set(SOURCES
   ${CMAKE_SOURCE_DIR}/pal_hss.cpp
   ${CMAKE_SOURCE_DIR}/hss_hd.cpp
   ${CMAKE_SOURCE_DIR}/pk_hd_fss.cpp
+  ${CMAKE_SOURCE_DIR}/u8_ss_iblt.cpp
   #${CMAKE_SOURCE_DIR}/ss_iblt.cpp
   ${CMAKE_SOURCE_DIR}/u64_ss_iblt.cpp
+  ${CMAKE_SOURCE_DIR}/u8_ss_iblt.cpp
   ${CMAKE_SOURCE_DIR}/pk_fpir.cpp
 )
 
@@ -142,6 +145,7 @@ if(BUILD_BENCH)
         sk_hd_fss_bench
         dpf_bench
         pk_hd_fss_bench
+        ss_iblt_bench
     )
 
     set (BENCH_SOURCE_PREFIX ${CMAKE_SOURCE_DIR}/benchmarks)
@@ -150,6 +154,7 @@ if(BUILD_BENCH)
     add_executable(sk_hd_fss_bench ${BENCH_SOURCE_PREFIX}/sk_hd_fss.bench.cpp ${SOURCES})
     add_executable(dpf_bench ${BENCH_SOURCE_PREFIX}/dpf.bench.cpp ${SOURCES})
     add_executable(pk_hd_fss_bench ${BENCH_SOURCE_PREFIX}/pk_hd_fss.bench.cpp ${SOURCES})
+    add_executable(ss_iblt_bench ${BENCH_SOURCE_PREFIX}/ss_iblt.bench.cpp ${SOURCES})
     #add_executable(psu_bench ${BENCH_SOURCE_PREFIX}/psu.bench.cpp ${SOURCES})
     #add_executable(ot_reduc ${BENCH_SOURCE_PREFIX}/ot_reduc.bench.cpp ${SOURCES})    
     #add_executable(simd_bench ${BENCH_SOURCE_PREFIX}/simd.bench.cpp ${SOURCES})
@@ -186,6 +191,9 @@ endif()
 
 add_executable(calc_fss_key_size ${CMAKE_SOURCE_DIR}/calc_fss_key_size.cpp ${SOURCES})
 target_link_libraries(calc_fss_key_size oc::cryptoTools ${GMP_LIBRARIES} ${GMPXX_LIBRARIES})
+
+add_executable(calc_fpir_response_size ${CMAKE_SOURCE_DIR}/calc_fpir_response_size.cpp ${SOURCES})
+target_link_libraries(calc_fpir_response_size oc::cryptoTools ${GMP_LIBRARIES} ${GMPXX_LIBRARIES})
 
 #add_executable(psu_main ${CMAKE_SOURCE_DIR}/psu_main.cpp ${SOURCES})
 #target_link_libraries(psu_main visa::volePSI coproto::coproto xxhash unordered_dense::unordered_dense)

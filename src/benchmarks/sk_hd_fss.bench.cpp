@@ -458,7 +458,7 @@ TEST_CASE("SK HD FSS eval for n=64.", "[sk_hd_fss][eval][n=64]") {
 }
 
 
-TEST_CASE("SK HD FSS key pairs are generated with n=8.", "[sk_hd_fss][n=8]") {
+TEST_CASE("SK HD FSS key pairs are generated with n=8.", "[sk_hd_fss][gen][n=8]") {
     
     constexpr size_t n = 8; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -520,7 +520,7 @@ TEST_CASE("SK HD FSS key pairs are generated with n=8.", "[sk_hd_fss][n=8]") {
     };
 }
 
-TEST_CASE("SK HD FSS key pairs are generated with n=16.", "[sk_hd_fss][n=16]") {
+TEST_CASE("SK HD FSS key pairs are generated with n=16.", "[sk_hd_fss][gen][n=16]") {
     
     constexpr size_t n = 16; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -582,7 +582,7 @@ TEST_CASE("SK HD FSS key pairs are generated with n=16.", "[sk_hd_fss][n=16]") {
     };
 }
 
-TEST_CASE("SK HD FSS key pairs are generated with n=32.", "[sk_hd_fss][n=32]") {
+TEST_CASE("SK HD FSS key pairs are generated with n=32.", "[sk_hd_fss][gen][n=32]") {
     
     constexpr size_t n = 32; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.
@@ -644,7 +644,7 @@ TEST_CASE("SK HD FSS key pairs are generated with n=32.", "[sk_hd_fss][n=32]") {
     };
 }
 
-TEST_CASE("SK HD FSS key pairs are generated with n=64.", "[sk_hd_fss][n=64]") {
+TEST_CASE("SK HD FSS key pairs are generated with n=64.", "[sk_hd_fss][gen][n=64]") {
     
     constexpr size_t n = 64; // Length of the input bit vectors for the FSS scheme.
     constexpr size_t num_rand_trials = 1ULL << 4; // Number of random trials to perform for correctness testing.

@@ -81,12 +81,20 @@ namespace pal_hss {
     
     void hom_add_inputs(const pal_hss::input& in0, const pal_hss::input& in1, const pal_hss::pk& pk, pal_hss::input& sum_input_out);
 
+    void hom_add_mem(const pal_hss::mem& mem0, const pal_hss::mem& mem1, const pal_hss::pk& pk, pal_hss::mem& sum_mem_out);
+
     // This function is an in-place version of the above function that stores the result in in0_and_out to save memory. in1 is not modified.
     void hom_add_inputs(pal_hss::input& in0_and_out, const pal_hss::input& in1, const pal_hss::pk& pk);
     
     void input_to_mem(const pal_hss::input& input, const pal_hss::pk& pk, const pal_hss::ek& ek, pal_hss::mem& mem_out);
 
-    void hom_mult_mem_input(const pal_hss::mem& mem_in, const pal_hss::input& input, const pal_hss::pk& pk, const pal_hss::ek& ek, pal_hss::mem& mem_out);        
+    void pubconst_to_mem(const mpz_class& pubconst, const pal_hss::pk& pk, const pal_hss::ek& ek, size_t party_idx, pal_hss::mem& mem_out);
+
+    void hom_mult_mem_pubconst(const pal_hss::mem& mem_in, const mpz_class& pubconst, const pal_hss::pk& pk, const pal_hss::ek& ek, pal_hss::mem& mem_out);
+
+    void hom_mult_mem_input(const pal_hss::mem& mem_in, const pal_hss::input& input, const pal_hss::pk& pk, const pal_hss::ek& ek, pal_hss::mem& mem_out);
+    
+    void hom_mult_mem_palct(const pal_hss::mem& mem_in, const mpz_class& pal_ct, const pal_hss::pk& pk, const pal_hss::ek& ek, mpz_class& ss_out);
 
     // This function multiplies an input and a memory share, and stores the result in the memory share to save memory. The input is not modified.
     void hom_mult_mem_input(pal_hss::mem& mem_in_out, const pal_hss::input& input, const pal_hss::pk& pk, const pal_hss::ek& ek);

@@ -12,6 +12,7 @@ namespace pk_hd_fss {
     struct key {
         size_t n;
         size_t inclusive_hd_threshold;
+        uint8_t ss_mod;
         pal_hss::pk hss_pk;
         pal_hss::ek hss_ek;
         std::vector<pal_hss::input> enc_bv;
@@ -42,6 +43,8 @@ namespace pk_hd_fss {
                  osuCrypto::PRNG& prg,
                  pk_hd_fss::key& k0,
                  pk_hd_fss::key& k1);
+
+    size_t key_byte_size(const pk_hd_fss::key& k);
 
     void eval(const pk_hd_fss::key& k,
               const osuCrypto::BitVector& pub_bit_vector,

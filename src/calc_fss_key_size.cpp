@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <array>
 #include "./fss.hpp"
+#include "./pk_hd_fss.hpp"
 #include "cryptoTools/Common/BitVector.h"
 #include "cryptoTools/Crypto/PRNG.h"
 #include "cryptoTools/Common/block.h"
@@ -67,6 +68,32 @@ static size_t sk_hd_fss_key_byte_size(size_t n) {
     return ddf_key_size(key_pair[0]);
 }
 
+static size_t pk_hd_fss_key_byte_size(size_t n, size_t inclusive_hd_threshold) {
+    assert(n > 0 && n <= MAX_N);
+
+    PRNG prg(osuCrypto::toBlock(0, 0)); // The actual seed doesn't matter for computing the key size.
+
+    pk_hd_fss::one_time_setup_opts one_time_setup_opts;
+    one_time_setup_opts.blum_int_bitlen = 2048;
+    one_time_setup_opts.miller_rabin_rounds_per_prime = 25;
+    one_time_setup_opts.stat_sec_param = 40;
+    one_time_setup_opts.eval_out_ss_prime_mod = 251;
+    one_time_setup_opts.n = n;
+    one_time_setup_opts.inclusive_hd_threshold = inclusive_hd_threshold;
+
+    pk_hd_fss::one_time_setup_sk one_time_setup_sk;
+    pk_hd_fss::one_time_setup(one_time_setup_opts, prg, one_time_setup_sk);
+
+    BitVector secret_bv(n);
+    secret_bv.randomize(prg); // Only the sive of the bit vector matters for computing the key size, so we can just randomize it.
+
+    pk_hd_fss::key k0, k1;
+    pk_hd_fss::key_gen(one_time_setup_sk, secret_bv, prg, k0, k1); 
+
+    return pk_hd_fss::key_byte_size(k0);
+    
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 4) {
         std::cerr << "Usage: " << argv[0] << " <fss_type> <n> <delta>" << std::endl;
@@ -87,8 +114,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (fss_type != "dpf" && fss_type != "naive_sk_hd_fss" && fss_type != "sk_hd_fss") {
-        std::cerr << "Error: fss_type must be either 'dpf', 'naive_sk_hd_fss', or 'sk_hd_fss'" << std::endl;
+    if (fss_type != "dpf" && fss_type != "naive_sk_hd_fss" && fss_type != "sk_hd_fss" && fss_type != "pk_hd_fss") {
+        std::cerr << "Error: fss_type must be either 'dpf', 'naive_sk_hd_fss', 'sk_hd_fss', or 'pk_hd_fss'" << std::endl;
         return 1;
     }
 
@@ -108,6 +135,10 @@ int main(int argc, char* argv[]) {
         key_size_bytes = sk_hd_fss_key_byte_size(n);
 
         std::cout << "SK HD-FSS key size for n = " << n << " and delta = 1: " << key_size_bytes << " bytes (" << (key_size_bytes / 1024.0) << " KB)" << std::endl;
+    } else if (fss_type == "pk_hd_fss") {
+        key_size_bytes = pk_hd_fss_key_byte_size(n, delta);
+
+        std::cout << "PK HD-FSS key size for n = " << n << " and inclusive HD threshold = " << delta << ": " << key_size_bytes << " bytes (" << (key_size_bytes / 1024.0) << " KB)" << std::endl;
     }
     
     return 0;
